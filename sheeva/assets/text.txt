@@ -1,0 +1,14 @@
+Тестовая команда 1
+{
+http://localhost:8000?command=test1
+}
+
+Тестовая команда 2
+{
+http://localhost:8000?command=test3
+}
+
+Тестовая команда 3
+{
+http://localhost:8000?command=test3
+}
