@@ -42,7 +42,8 @@ fn show_error_description(r: &ErrorResponse) -> &String {
     r.message()
 }
 
-fn main() -> Result<(), Error> {
+#[tokio::main]
+async fn main() -> Result<(), Error> {
     let args = Cli::from_args();
 
     let request_url = format!(
@@ -51,21 +52,21 @@ fn main() -> Result<(), Error> {
         id = "92a3fc2f269949f3f7c3e7871ddafe7f"
     );
 
-    let r = match reqwest::blocking::get(&request_url) {
+    let r = match reqwest::get(&request_url).await {
         Ok(response) => response,
-        Err(_) => panic!("Error at blocking call"),
+        Err(_) => panic!("Error at non-blocking call"),
     };
     match r.status() {
         StatusCode::OK => match args.param {
             Param::Temp => println!(
                 "The current temperature is: {}",
-                get_celsius(&r.json::<OkResponse>()?)
+                get_celsius(&r.json::<OkResponse>().await?)
             ),
             _ => println!("Parameter to be added..."),
         },
         StatusCode::UNAUTHORIZED => println!(
             "The error is: {}",
-            show_error_description(&r.json::<ErrorResponse>()?)
+            show_error_description(&r.json::<ErrorResponse>().await?)
         ),
         StatusCode::NOT_FOUND => println!("No data for this city: {}", r.status()),
         _ => panic!("No hander for this status: {}", r.status()),
