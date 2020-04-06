@@ -11,13 +11,19 @@ struct Tree {
     root: Option<Node>,
 }
 
-impl Tree {
-    pub fn new(id: u32) -> Tree {
-        Tree { id: id, root: None }
+struct TreeParser {
+    filename: String,
+}
+
+impl TreeParser {
+    pub fn new(filename: &str) -> TreeParser {
+        TreeParser {
+            filename: String::from(filename),
+        }
     }
 
-    pub fn read_from_file(&mut self, filename: &str) -> Option<bool> {
-        let data = match fs::read_to_string(filename) {
+    pub fn read_from_file(&self) -> Option<Tree> {
+        let data = match fs::read_to_string(&self.filename) {
             Ok(s) => s,
             Err(_) => panic!("Can't read file"),
         };
@@ -41,10 +47,17 @@ impl Tree {
             }
             println!("{}", line);
         }
-        self.root = stack.pop();
-        println!("self.root =  {:?}", self.root);
+        let mut tree = Tree::new(0);
+        tree.root = stack.pop();
+        println!("tree.root =  {:?}", tree.root);
 
-        Some(true)
+        Some(tree)
+    }
+}
+
+impl Tree {
+    pub fn new(id: u32) -> Tree {
+        Tree { id: id, root: None }
     }
 }
 
@@ -61,7 +74,6 @@ impl Node {
 }
 
 fn main() {
-    let mut tree = Tree::new(0);
-
-    tree.read_from_file("assets/complex.txt");
+    let parser = TreeParser::new("assets/complex.txt");
+    let tree = parser.read_from_file();
 }
