@@ -23,7 +23,7 @@ impl Tree {
         };
         let mut stack: Vec<Node> = vec![];
         stack.push(Node {
-            value: String::from("root"),
+            value: String::from("default_root_value"),
             children: vec![],
         });
         for line in data.lines() {
@@ -37,15 +37,12 @@ impl Tree {
                     let last = stack.pop()?;
                     stack.get_mut(previous_to_last_index)?.add(last);
                 }
-                l => match stack.last_mut() {
-                    Some(node) => node.value = String::from(l),
-                    None => panic!("Can't parse value"),
-                },
+                l => stack.last_mut()?.value = String::from(l),
             }
             println!("{}", line);
         }
-        println!("stack.len() = {}", stack.len());
-        println!("stack.first = {:?}", stack.first()?);
+        self.root = stack.pop();
+        println!("self.root =  {:?}", self.root);
 
         Some(true)
     }
