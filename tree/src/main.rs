@@ -9,7 +9,7 @@ struct Node {
 
 impl PartialEq for Node {
     fn eq(&self, other: &Self) -> bool {
-        self.value == other.value
+        self.value == other.value && self.children == other.children
     }
 }
 
