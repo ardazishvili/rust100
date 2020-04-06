@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::fs;
 
 #[derive(Debug)]
@@ -6,9 +7,14 @@ struct Node {
     children: Vec<Box<Node>>,
 }
 
+impl PartialEq for Node {
+    fn eq(&self, other: &Self) -> bool {
+        self.value == other.value
+    }
+}
+
 struct Tree {
-    id: u32,
-    root: Option<Node>,
+    root: Box<Node>,
 }
 
 struct TreeParser {
@@ -43,21 +49,44 @@ impl TreeParser {
                     let last = stack.pop()?;
                     stack.get_mut(previous_to_last_index)?.add(last);
                 }
-                l => stack.last_mut()?.value = String::from(l),
+                l => {
+                    stack.last_mut()?.value = String::from(l);
+                }
             }
-            println!("{}", line);
         }
-        let mut tree = Tree::new(0);
-        tree.root = stack.pop();
-        println!("tree.root =  {:?}", tree.root);
+        let tree = Tree {
+            root: Box::new(stack.pop()?),
+        };
 
         Some(tree)
     }
 }
 
 impl Tree {
-    pub fn new(id: u32) -> Tree {
-        Tree { id: id, root: None }
+    pub fn print_df(&self) {
+        println!("Printing depth first traversal");
+        self.root.print_df();
+        println!("Done!");
+    }
+
+    pub fn print_bf(&self) {
+        println!("Printing breadth first traversal");
+        let mut used = vec![&self.root];
+        let mut queue = VecDeque::new();
+        queue.push_back(&self.root);
+
+        while !queue.is_empty() {
+            if let Some(node) = queue.pop_front() {
+                print!("{} ", node.value);
+                for child in &node.children {
+                    if !used.contains(&&child) {
+                        used.push(&child);
+                        queue.push_back(&child);
+                    }
+                }
+            }
+        }
+        println!("Done!");
     }
 }
 
@@ -66,14 +95,18 @@ impl Node {
         self.children.push(Box::new(leaf));
     }
 
-    pub fn print_children(&self) {
-        for child in &self.children {
-            println!("{:#?}", child.value);
+    pub fn print_df(&self) {
+        print!("{} ", self.value);
+        for node in &self.children {
+            node.print_df();
         }
     }
 }
 
 fn main() {
-    let parser = TreeParser::new("assets/complex.txt");
-    let tree = parser.read_from_file();
+    let parser = TreeParser::new("assets/task.txt");
+    if let Some(tree) = parser.read_from_file() {
+        tree.print_df();
+        tree.print_bf();
+    }
 }
