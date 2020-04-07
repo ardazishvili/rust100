@@ -62,31 +62,109 @@ impl TreeParser {
     }
 }
 
-impl Tree {
-    pub fn print_df(&self) {
-        println!("Printing depth first traversal");
-        self.root.print_df();
-        println!("Done!");
-    }
+struct DFSIterator<'a> {
+    queue: VecDeque<&'a Box<Node>>,
+}
 
-    pub fn print_bf(&self) {
-        println!("Printing breadth first traversal");
-        let mut used = vec![&self.root];
-        let mut queue = VecDeque::new();
-        queue.push_back(&self.root);
+struct BFSIterator<'a> {
+    used: Vec<&'a Box<Node>>,
+    queue: VecDeque<&'a Box<Node>>,
+}
 
-        while !queue.is_empty() {
-            if let Some(node) = queue.pop_front() {
-                print!("{} ", node.value);
-                for child in &node.children {
-                    if !used.contains(&&child) {
-                        used.push(&child);
-                        queue.push_back(&child);
-                    }
+impl<'a> Iterator for DFSIterator<'a> {
+    type Item = String;
+
+    fn next(&mut self) -> Option<String> {
+        match self.queue.pop_front() {
+            None => None,
+            Some(node) => {
+                for child in node.children.iter().rev() {
+                    self.queue.push_front(&child);
                 }
+                Some(node.value.clone())
             }
         }
-        println!("Done!");
+    }
+}
+
+impl<'a> Iterator for BFSIterator<'a> {
+    type Item = String;
+    fn next(&mut self) -> Option<String> {
+        match self.queue.pop_front() {
+            None => None,
+            Some(node) => {
+                for child in &node.children {
+                    if !self.used.contains(&&child) {
+                        self.used.push(&child);
+                        self.queue.push_back(&child);
+                    }
+                }
+                Some(node.value.clone())
+            }
+        }
+
+        // while !queue.is_empty() {
+        //     if let Some(node) = queue.pop_front() {
+        //         print!("{} ", node.value);
+        //         for child in &node.children {
+        //             if !used.contains(&&child) {
+        //                 used.push(&child);
+        //                 queue.push_back(&child);
+        //             }
+        //         }
+        //     }
+        // }
+    }
+}
+
+impl Tree {
+    // pub fn print_df(&self) {
+
+    //     let mut queue = VecDeque::new();
+    //     queue.push_front(&self.root);
+
+    //     while !queue.is_empty() {
+    //         if let Some(node) = queue.pop_front() {
+    //             print!("{} ", node.value);
+    //             for child in node.children.iter().rev() {
+    //                 queue.push_front(&child);
+    //             }
+    //         }
+    //     }
+
+    //     println!("Done!");
+    // }
+
+    // pub fn print_bf(&self) {
+    //     let mut used = vec![&self.root];
+    //     let mut queue = VecDeque::new();
+    //     queue.push_back(&self.root);
+
+    //     while !queue.is_empty() {
+    //         if let Some(node) = queue.pop_front() {
+    //             print!("{} ", node.value);
+    //             for child in &node.children {
+    //                 if !used.contains(&&child) {
+    //                     used.push(&child);
+    //                     queue.push_back(&child);
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     println!("Done!");
+    // }
+
+    fn dfs<'a>(&'a self) -> DFSIterator<'a> {
+        let mut q = VecDeque::new();
+        q.push_front(&self.root);
+        DFSIterator { queue: q }
+    }
+
+    fn bfs<'a>(&'a self) -> BFSIterator<'a> {
+        let mut q = VecDeque::new();
+        q.push_front(&self.root);
+        let mut u = vec![&self.root];
+        BFSIterator { used: u, queue: q }
     }
 }
 
@@ -94,19 +172,18 @@ impl Node {
     pub fn add(&mut self, leaf: Node) {
         self.children.push(Box::new(leaf));
     }
-
-    pub fn print_df(&self) {
-        print!("{} ", self.value);
-        for node in &self.children {
-            node.print_df();
-        }
-    }
 }
 
 fn main() {
     let parser = TreeParser::new("assets/task.txt");
     if let Some(tree) = parser.read_from_file() {
-        tree.print_df();
-        tree.print_bf();
+        println!("Printing depth first traversal");
+        for i in tree.dfs() {
+            print!("{} ", i);
+        }
+        println!("\nPrinting breadth first traversal");
+        for i in tree.bfs() {
+            print!("{} ", i);
+        }
     }
 }
