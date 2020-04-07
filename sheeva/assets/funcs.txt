@@ -1,0 +1,14 @@
+Команда Тестовая 1
+{
+http://localhost:8000?command=test1
+}
+
+Команда Тестовая 2
+{
+http://localhost:8000?command=test2
+}
+
+Команда Тестовая 3
+{
+http://localhost:8000?command=test3
+}
