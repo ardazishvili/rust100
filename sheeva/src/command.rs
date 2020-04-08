@@ -1,5 +1,6 @@
 use crate::iterators::Node;
 use crate::parser::TreeParser;
+use regex::Regex;
 use reqwest::Client;
 use std::collections::HashMap;
 
@@ -35,24 +36,25 @@ impl Commands {
         let mut commands = HashMap::new();
 
         let parser = TreeParser::new(filename);
+        let re = Regex::new(r"Команда (.*)").unwrap();
         if let Some(tree) = parser.read() {
             // skip root or tree to include only commands
             for element in tree.dfs().skip(1) {
-                commands.insert(String::from(element.name()), element.values().clone());
+                if let Some(name) = re.captures(element.name()).unwrap().get(1) {
+                    commands.insert(String::from(name.as_str()), element.values().clone());
+                }
             }
         }
 
         Commands { commands }
     }
 
-    pub async fn execute(&self, command: String) -> ExeStatus {
+    pub async fn execute(&self, command: &str) -> ExeStatus {
         let client = Client::new();
-        for (key, value) in &self.commands {
-            println!("{:?}", key);
-        }
-        if let Some(queries) = self.commands.get(&command) {
+        if let Some(queries) = self.commands.get(command) {
             for query in queries {
-                let status = match client.get(query).send().await {
+                println!("      Executing query {}", query);
+                match client.get(query).send().await {
                     Ok(response) => response.status(),
                     Err(_) => return ExeStatus::HTTP_ERROR,
                 };
