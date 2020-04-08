@@ -1,5 +1,5 @@
 use crate::command::Commands;
-use crate::parser::TreeParser;
+use crate::parser::{ParseType, TreeParser};
 use crate::tree::Tree;
 use regex::Regex;
 
@@ -11,7 +11,7 @@ pub struct Scenario {
 
 impl Scenario {
     pub fn new(filename: &str) -> Option<Scenario> {
-        let parser = TreeParser::new(filename);
+        let parser = TreeParser::new(filename, ParseType::Scenario);
         if let Some(tree) = parser.read() {
             if let Some(node) = tree.dfs().skip(1).next() {
                 let re = Regex::new(r"Сценарий (.*)").unwrap();
@@ -32,16 +32,25 @@ impl Scenario {
     }
 
     pub fn load_commands(&mut self, cmds: Commands) {
+        println!("loading commands");
         self.commands = Some(cmds);
     }
 
     pub async fn execute(&self) {
+        println!("Executing the scenario");
         for node in self.tree.dfs() {
-            for command in node.values().iter() {
-                println!("  Executing command {}", command);
-                if let Some(executor) = &self.commands {
-                    executor.execute(command).await;
-                }
+            println!("  Executing command {}", node.name());
+            if let Some(executor) = &self.commands {
+                executor.execute(node.name()).await;
+            }
+        }
+    }
+
+    pub fn print(&self) {
+        for node in self.tree.dfs() {
+            println!("node name is {}", node.name());
+            for (index, value) in node.values().iter().enumerate() {
+                println!("value # {} is {}", index, value);
             }
         }
     }

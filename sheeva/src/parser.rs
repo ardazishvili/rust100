@@ -2,14 +2,22 @@ use crate::iterators::Node;
 use crate::tree::Tree;
 use std::fs;
 
+#[derive(PartialEq)]
+pub enum ParseType {
+    Commands,
+    Scenario,
+}
+
 pub struct TreeParser {
     filename: String,
+    t: ParseType,
 }
 
 impl TreeParser {
-    pub fn new(filename: &str) -> TreeParser {
+    pub fn new(filename: &str, t: ParseType) -> TreeParser {
         TreeParser {
             filename: String::from(filename),
+            t,
         }
     }
 
@@ -37,7 +45,16 @@ impl TreeParser {
                     {
                         stack.push(Node::new(String::from(l), vec![], vec![]));
                     } else {
-                        stack.last_mut()?.add_value(l);
+                        if self.t == ParseType::Commands {
+                            stack.last_mut()?.add_value(l);
+                        } else {
+                            let last_index = stack.len() - 1;
+                            stack.get_mut(last_index)?.add(Node::new(
+                                String::from(l),
+                                vec![],
+                                vec![],
+                            ));
+                        }
                     }
                 }
             }

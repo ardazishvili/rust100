@@ -1,5 +1,4 @@
-use crate::iterators::Node;
-use crate::parser::TreeParser;
+use crate::parser::{ParseType, TreeParser};
 use regex::Regex;
 use reqwest::Client;
 use std::collections::HashMap;
@@ -27,15 +26,15 @@ pub struct Commands {
 #[derive(Debug)]
 pub enum ExeStatus {
     OK,
-    COMMAND_NOT_FOUND,
-    HTTP_ERROR,
+    CommandNotFound,
+    HttpError,
 }
 
 impl Commands {
     pub fn new(filename: &str) -> Commands {
         let mut commands = HashMap::new();
 
-        let parser = TreeParser::new(filename);
+        let parser = TreeParser::new(filename, ParseType::Commands);
         let re = Regex::new(r"Команда (.*)").unwrap();
         if let Some(tree) = parser.read() {
             // skip root or tree to include only commands
@@ -56,11 +55,11 @@ impl Commands {
                 println!("      Executing query {}", query);
                 match client.get(query).send().await {
                     Ok(response) => response.status(),
-                    Err(_) => return ExeStatus::HTTP_ERROR,
+                    Err(_) => return ExeStatus::HttpError,
                 };
             }
         } else {
-            return ExeStatus::COMMAND_NOT_FOUND;
+            return ExeStatus::CommandNotFound;
         };
 
         ExeStatus::OK
