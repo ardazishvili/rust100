@@ -33,6 +33,7 @@ impl TreeParser {
                     if l.starts_with("Команда")
                         || l.starts_with("Сценарий")
                         || l.starts_with("Если")
+                        || l.starts_with("Иначе")
                     {
                         stack.push(Node::new(String::from(l), vec![], vec![]));
                     } else {

@@ -1,6 +1,8 @@
 Команда Тестовая 1
 {
-http://localhost:8000?command=test1
+http://localhost:8000?command=test11
+http://localhost:8000?command=test12
+http://localhost:8000?command=test13
 }
 
 Команда Тестовая 2

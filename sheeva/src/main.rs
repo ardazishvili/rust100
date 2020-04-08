@@ -22,5 +22,9 @@ async fn main() -> Result<(), Error> {
         }
     }
 
+    let commands = Commands::new("assets/funcs.txt");
+    let res = commands.execute(String::from("Команда Тестовая 1"));
+    println!("res is {:?}", res.await);
+
     Ok(())
 }
