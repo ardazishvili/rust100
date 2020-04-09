@@ -1,5 +1,6 @@
-use crate::iterators::Node;
+use crate::iterators::{Node, NodeType};
 use crate::tree::Tree;
+use regex::Regex;
 use std::fs;
 
 #[derive(PartialEq)]
@@ -27,7 +28,12 @@ impl TreeParser {
             Err(_) => panic!("Can't read file"),
         };
         let mut stack: Vec<Node> = vec![];
-        stack.push(Node::new(self.filename.clone(), vec![], vec![]));
+        stack.push(Node::new(
+            self.filename.clone(),
+            NodeType::None,
+            vec![],
+            vec![],
+        ));
         for line in data.lines() {
             match line.trim() {
                 "{" => continue,
@@ -38,12 +44,25 @@ impl TreeParser {
                     stack.get_mut(previous_to_last_index)?.add(last);
                 }
                 l => {
-                    if l.starts_with("Команда")
-                        || l.starts_with("Сценарий")
-                        || l.starts_with("Если")
-                        || l.starts_with("Иначе")
-                    {
-                        stack.push(Node::new(String::from(l), vec![], vec![]));
+                    if l.starts_with("Команда") || l.starts_with("Сценарий") {
+                        stack.push(Node::new(String::from(l), NodeType::None, vec![], vec![]));
+                    } else if l.starts_with("Если") {
+                        let re = Regex::new(r"Если (.*)").unwrap();
+                        if let Some(predicate) = re.captures(l).unwrap().get(1) {
+                            stack.push(Node::new(
+                                String::from(l),
+                                NodeType::Condition(Some(String::from(predicate.as_str()))),
+                                vec![],
+                                vec![],
+                            ));
+                        }
+                    } else if l.starts_with("Иначе") {
+                        stack.push(Node::new(
+                            String::from(l),
+                            NodeType::Condition(None),
+                            vec![],
+                            vec![],
+                        ));
                     } else {
                         if self.t == ParseType::Commands {
                             stack.last_mut()?.add_value(l);
@@ -51,6 +70,7 @@ impl TreeParser {
                             let last_index = stack.len() - 1;
                             stack.get_mut(last_index)?.add(Node::new(
                                 String::from(l),
+                                NodeType::Exe,
                                 vec![],
                                 vec![],
                             ));

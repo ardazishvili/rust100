@@ -1,4 +1,5 @@
 use crate::command::Commands;
+use crate::iterators::NodeType;
 use crate::parser::{ParseType, TreeParser};
 use crate::tree::Tree;
 use regex::Regex;
@@ -48,7 +49,21 @@ impl Scenario {
 
     pub fn print(&self) {
         for node in self.tree.dfs() {
-            println!("node name is {}", node.name());
+            match &node.t {
+                NodeType::None => println!("Type of node {} is None", node.name()),
+                NodeType::Exe => println!("Type of node {} is Exe", node.name()),
+                NodeType::Condition(opt) => match opt {
+                    Some(s) => println!(
+                        "Type of node {} is Condition with predicate {}",
+                        node.name(),
+                        s
+                    ),
+                    None => println!(
+                        "Type of node {} is Condition with predicate TRUE",
+                        node.name()
+                    ),
+                },
+            }
             for (index, value) in node.values().iter().enumerate() {
                 println!("value # {} is {}", index, value);
             }

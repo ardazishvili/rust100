@@ -1,16 +1,25 @@
 pub use std::collections::VecDeque;
 
+#[derive(Debug, PartialEq)]
+pub enum NodeType {
+    None,
+    Exe,
+    Condition(Option<String>),
+}
+
 #[derive(Debug)]
 pub struct Node {
     name: String,
     values: Vec<String>,
     children: Vec<Box<Node>>,
+    pub t: NodeType,
 }
 
 impl Node {
-    pub fn new(name: String, values: Vec<String>, children: Vec<Box<Node>>) -> Node {
+    pub fn new(name: String, t: NodeType, values: Vec<String>, children: Vec<Box<Node>>) -> Node {
         Node {
             name,
+            t,
             values,
             children,
         }
