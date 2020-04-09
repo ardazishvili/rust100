@@ -1,4 +1,4 @@
-use crate::command::Commands;
+use crate::command::Expressions;
 use crate::iterators::NodeType;
 use crate::parser::{ParseType, TreeParser};
 use crate::tree::Tree;
@@ -7,7 +7,7 @@ use regex::Regex;
 pub struct Scenario {
     name: String,
     tree: Tree,
-    commands: Option<Commands>,
+    commands: Option<Expressions>,
 }
 
 impl Scenario {
@@ -32,7 +32,7 @@ impl Scenario {
         &self.name
     }
 
-    pub fn load_commands(&mut self, cmds: Commands) {
+    pub fn load_commands(&mut self, cmds: Expressions) {
         println!("loading commands");
         self.commands = Some(cmds);
     }
@@ -53,11 +53,17 @@ impl Scenario {
                 NodeType::None => println!("Type of node {} is None", node.name()),
                 NodeType::Exe => println!("Type of node {} is Exe", node.name()),
                 NodeType::Condition(opt) => match opt {
-                    Some(s) => println!(
-                        "Type of node {} is Condition with predicate {}",
-                        node.name(),
-                        s
-                    ),
+                    Some(s) => {
+                        if let Some(evaluator) = &self.commands {
+                            println!(
+                                "Type of node {} is Condition with predicate {}, which evaluates to {}",
+                                node.name(),
+                                s,
+                                evaluator.eval_predicate(s)
+                                )
+                        }
+                    }
+
                     None => println!(
                         "Type of node {} is Condition with predicate TRUE",
                         node.name()

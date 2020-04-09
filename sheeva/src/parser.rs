@@ -5,7 +5,7 @@ use std::fs;
 
 #[derive(PartialEq)]
 pub enum ParseType {
-    Commands,
+    Expressions,
     Scenario,
 }
 
@@ -44,7 +44,10 @@ impl TreeParser {
                     stack.get_mut(previous_to_last_index)?.add(last);
                 }
                 l => {
-                    if l.starts_with("Команда") || l.starts_with("Сценарий") {
+                    if l.starts_with("Команда")
+                        || l.starts_with("Сценарий")
+                        || l.starts_with("Условие")
+                    {
                         stack.push(Node::new(String::from(l), NodeType::None, vec![], vec![]));
                     } else if l.starts_with("Если") {
                         let re = Regex::new(r"Если (.*)").unwrap();
@@ -64,7 +67,7 @@ impl TreeParser {
                             vec![],
                         ));
                     } else {
-                        if self.t == ParseType::Commands {
+                        if self.t == ParseType::Expressions {
                             stack.last_mut()?.add_value(l);
                         } else {
                             let last_index = stack.len() - 1;

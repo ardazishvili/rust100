@@ -1,4 +1,4 @@
-pub use crate::command::{Command, Commands};
+pub use crate::command::{Command, Expressions};
 pub use crate::parser::TreeParser;
 pub use crate::scenario::Scenario;
 
