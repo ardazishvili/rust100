@@ -56,6 +56,7 @@ impl PartialEq for Node {
 pub struct ConditionIterator<'a> {
     queue: VecDeque<&'a Box<Node>>,
     evaluator: &'a Expressions,
+    if_was_true: bool,
 }
 
 impl<'a> ConditionIterator<'a> {
@@ -63,7 +64,11 @@ impl<'a> ConditionIterator<'a> {
         queue: VecDeque<&'a Box<Node>>,
         evaluator: &'a Expressions,
     ) -> ConditionIterator<'a> {
-        ConditionIterator { queue, evaluator }
+        ConditionIterator {
+            queue,
+            evaluator,
+            if_was_true: false,
+        }
     }
 }
 
@@ -109,18 +114,32 @@ impl<'a> Iterator for ConditionIterator<'a> {
                 }
                 NodeType::Condition(opt) => match opt {
                     None => {
-                        for child in node.children.iter().rev() {
-                            self.queue.push_front(&child);
+                        // if the 'if' branch was true at the previous stage DO NOT yield value at
+                        // current 'else' stage
+                        println!("Node {}, if_was_true: {}", node.name(), self.if_was_true);
+                        if !self.if_was_true {
+                            for child in node.children.iter().rev() {
+                                self.queue.push_front(&child);
+                            }
+                            self.if_was_true = false;
+                            Some(node)
+                        //else: ignore
+                        } else {
+                            self.next()
                         }
-                        Some(node)
                     }
                     Some(predicate) => {
                         if self.evaluator.eval_predicate(predicate) {
                             for child in node.children.iter().rev() {
                                 self.queue.push_front(&child);
                             }
+                            // mark the state of iterator: 'else' branch will not yield at the 'next()'
+                            // step
+                            println!("Setting if_was_true");
+                            self.if_was_true = true;
                             Some(node)
                         } else {
+                            self.if_was_true = false;
                             self.next()
                         }
                     }

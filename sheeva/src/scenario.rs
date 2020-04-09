@@ -38,16 +38,6 @@ impl Scenario {
     }
 
     pub async fn execute(&self) {
-        println!("Executing the scenario");
-        for node in self.tree.dfs() {
-            println!("  Executing command {}", node.name());
-            if let Some(executor) = &self.commands {
-                executor.execute(node.name()).await;
-            }
-        }
-    }
-
-    pub async fn print_cond(&self) {
         println!("Printing the scenario");
         if let Some(evaluator) = &self.commands {
             for node in self.tree.cond_iter(evaluator).skip(1) {
