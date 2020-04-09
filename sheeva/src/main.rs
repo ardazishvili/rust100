@@ -9,7 +9,7 @@ async fn main() -> Result<(), Error> {
         scenario.load_commands(commands);
         println!("Scenario name: {}", scenario.name());
         // scenario.execute().await;
-        scenario.print();
+        scenario.print_cond().await;
     } else {
         println!("Can't get a scenario");
     }

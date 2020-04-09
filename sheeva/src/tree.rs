@@ -1,3 +1,4 @@
+use crate::command::Expressions;
 use crate::iterators::*;
 
 pub struct Tree {
@@ -19,5 +20,11 @@ impl Tree {
         let mut q = VecDeque::new();
         q.push_front(&self.root);
         BFSIterator::new(vec![&self.root], q)
+    }
+
+    pub fn cond_iter<'a>(&'a self, evaluator: &'a Expressions) -> ConditionIterator<'a> {
+        let mut q = VecDeque::new();
+        q.push_front(&self.root);
+        ConditionIterator::new(q, evaluator)
     }
 }

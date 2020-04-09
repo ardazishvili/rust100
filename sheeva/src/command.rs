@@ -24,7 +24,7 @@ pub struct Expressions {
     predicates: HashMap<String, String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ExeStatus {
     OK,
     CommandNotFound,
@@ -68,6 +68,7 @@ impl Expressions {
     pub async fn execute(&self, command: &str) -> ExeStatus {
         let client = Client::new();
         if let Some(queries) = self.commands.get(command) {
+            // println!("Length of queries is {}", queries.len());
             for query in queries {
                 println!("      Executing query {}", query);
                 match client.get(query).send().await {

@@ -1,4 +1,4 @@
-use crate::command::Expressions;
+use crate::command::{ExeStatus, Expressions};
 use crate::iterators::NodeType;
 use crate::parser::{ParseType, TreeParser};
 use crate::tree::Tree;
@@ -43,6 +43,21 @@ impl Scenario {
             println!("  Executing command {}", node.name());
             if let Some(executor) = &self.commands {
                 executor.execute(node.name()).await;
+            }
+        }
+    }
+
+    pub async fn print_cond(&self) {
+        println!("Printing the scenario");
+        if let Some(evaluator) = &self.commands {
+            for node in self.tree.cond_iter(evaluator).skip(1) {
+                if node.t == NodeType::Exe {
+                    println!("  Executing command {}", node.name());
+                    let res = evaluator.execute(node.name()).await;
+                    if res != ExeStatus::OK {
+                        println!("      No query for command {}", node.name());
+                    }
+                }
             }
         }
     }

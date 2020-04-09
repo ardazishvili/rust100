@@ -1,3 +1,4 @@
+use crate::command::Expressions;
 pub use std::collections::VecDeque;
 
 #[derive(Debug, PartialEq)]
@@ -52,6 +53,20 @@ impl PartialEq for Node {
     }
 }
 
+pub struct ConditionIterator<'a> {
+    queue: VecDeque<&'a Box<Node>>,
+    evaluator: &'a Expressions,
+}
+
+impl<'a> ConditionIterator<'a> {
+    pub fn new(
+        queue: VecDeque<&'a Box<Node>>,
+        evaluator: &'a Expressions,
+    ) -> ConditionIterator<'a> {
+        ConditionIterator { queue, evaluator }
+    }
+}
+
 pub struct DFSIterator<'a> {
     queue: VecDeque<&'a Box<Node>>,
 }
@@ -70,6 +85,48 @@ pub struct BFSIterator<'a> {
 impl<'a> BFSIterator<'a> {
     pub fn new(used: Vec<&'a Box<Node>>, queue: VecDeque<&'a Box<Node>>) -> BFSIterator<'a> {
         BFSIterator { used, queue }
+    }
+}
+
+impl<'a> Iterator for ConditionIterator<'a> {
+    type Item = &'a Node;
+
+    fn next(&mut self) -> Option<&'a Node> {
+        match self.queue.pop_front() {
+            None => None,
+            Some(node) => match &node.t {
+                NodeType::None => {
+                    for child in node.children.iter().rev() {
+                        self.queue.push_front(&child);
+                    }
+                    Some(node)
+                }
+                NodeType::Exe => {
+                    for child in node.children.iter().rev() {
+                        self.queue.push_front(&child);
+                    }
+                    Some(node)
+                }
+                NodeType::Condition(opt) => match opt {
+                    None => {
+                        for child in node.children.iter().rev() {
+                            self.queue.push_front(&child);
+                        }
+                        Some(node)
+                    }
+                    Some(predicate) => {
+                        if self.evaluator.eval_predicate(predicate) {
+                            for child in node.children.iter().rev() {
+                                self.queue.push_front(&child);
+                            }
+                            Some(node)
+                        } else {
+                            self.next()
+                        }
+                    }
+                },
+            },
+        }
     }
 }
 
