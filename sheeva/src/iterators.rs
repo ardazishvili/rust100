@@ -70,6 +70,13 @@ impl<'a> ConditionIterator<'a> {
             if_was_true: false,
         }
     }
+
+    fn iterate_and_yield(&mut self, node: &'a Node) -> Option<&'a Node> {
+        for child in node.children.iter().rev() {
+            self.queue.push_front(&child);
+        }
+        Some(node)
+    }
 }
 
 pub struct DFSIterator<'a> {
@@ -97,55 +104,36 @@ impl<'a> Iterator for ConditionIterator<'a> {
     type Item = &'a Node;
 
     fn next(&mut self) -> Option<&'a Node> {
-        match self.queue.pop_front() {
-            None => None,
-            Some(node) => match &node.t {
-                NodeType::None => {
-                    for child in node.children.iter().rev() {
-                        self.queue.push_front(&child);
-                    }
-                    Some(node)
-                }
-                NodeType::Exe => {
-                    for child in node.children.iter().rev() {
-                        self.queue.push_front(&child);
-                    }
-                    Some(node)
-                }
+        self.queue.pop_front().and_then(|node| {
+            match &node.t {
+                NodeType::None => self.iterate_and_yield(node),
+                NodeType::Exe => self.iterate_and_yield(node),
                 NodeType::Condition(opt) => match opt {
                     None => {
                         // if the 'if' branch was true at the previous stage DO NOT yield value at
                         // current 'else' stage
                         println!("Node {}, if_was_true: {}", node.name(), self.if_was_true);
-                        if !self.if_was_true {
-                            for child in node.children.iter().rev() {
-                                self.queue.push_front(&child);
-                            }
-                            self.if_was_true = false;
-                            Some(node)
-                        //else: ignore
-                        } else {
+                        if self.if_was_true {
                             self.next()
+                        //else: yield value
+                        } else {
+                            self.if_was_true = false;
+                            self.iterate_and_yield(node)
                         }
                     }
                     Some(predicate) => {
                         if self.evaluator.eval_predicate(predicate) {
-                            for child in node.children.iter().rev() {
-                                self.queue.push_front(&child);
-                            }
-                            // mark the state of iterator: 'else' branch will not yield at the 'next()'
-                            // step
-                            println!("Setting if_was_true");
+                            // mark the state of iterator: 'else' branch will not yield at the 'next()' step
                             self.if_was_true = true;
-                            Some(node)
+                            self.iterate_and_yield(node)
                         } else {
                             self.if_was_true = false;
                             self.next()
                         }
                     }
                 },
-            },
-        }
+            }
+        })
     }
 }
 
@@ -153,32 +141,27 @@ impl<'a> Iterator for DFSIterator<'a> {
     type Item = &'a Node;
 
     fn next(&mut self) -> Option<&'a Node> {
-        match self.queue.pop_front() {
-            None => None,
-            Some(node) => {
-                for child in node.children.iter().rev() {
-                    self.queue.push_front(&child);
-                }
-                Some(node)
+        self.queue.pop_front().and_then(|node| {
+            for child in node.children.iter().rev() {
+                self.queue.push_front(&child);
             }
-        }
+            Some(&(**node))
+        })
     }
 }
 
 impl<'a> Iterator for BFSIterator<'a> {
     type Item = &'a Node;
+
     fn next(&mut self) -> Option<&'a Node> {
-        match self.queue.pop_front() {
-            None => None,
-            Some(node) => {
-                for child in &node.children {
-                    if !self.used.contains(&&child) {
-                        self.used.push(&child);
-                        self.queue.push_back(&child);
-                    }
+        self.queue.pop_front().and_then(|node| {
+            for child in &node.children {
+                if !self.used.contains(&&child) {
+                    self.used.push(&child);
+                    self.queue.push_back(&child);
                 }
-                Some(node)
             }
-        }
+            Some(&(**node))
+        })
     }
 }

@@ -1,6 +1,6 @@
 use crate::parser::{ParseType, TreeParser};
 use regex::Regex;
-use reqwest::Client;
+use reqwest::blocking::Client;
 use std::collections::HashMap;
 
 #[derive(Debug)]
@@ -43,16 +43,16 @@ impl Expressions {
             // skip root or tree to include only commands
             for element in tree.dfs().skip(1) {
                 if let Some(capture) = re_cmd.captures(element.name()) {
-                    if let Some(command) = capture.get(1) {
-                        commands.insert(String::from(command.as_str()), element.values().clone());
-                    }
+                    capture.get(1).and_then(|command| {
+                        commands.insert(String::from(command.as_str()), element.values().clone())
+                    });
                 } else if let Some(capture) = re_pred.captures(element.name()) {
-                    if let Some(predicate) = capture.get(1) {
+                    capture.get(1).and_then(|predicate| {
                         predicates.insert(
                             String::from(predicate.as_str()),
                             element.values().get(0).unwrap().clone(),
-                        );
-                    }
+                        )
+                    });
                 }
             }
         }
@@ -65,22 +65,25 @@ impl Expressions {
         }
     }
 
-    pub async fn execute(&self, command: &str) -> ExeStatus {
+    pub fn execute(&self, command: &str) -> ExeStatus {
         let client = Client::new();
-        if let Some(queries) = self.commands.get(command) {
-            // println!("Length of queries is {}", queries.len());
-            for query in queries {
-                println!("      Executing query {}", query);
-                match client.get(query).send().await {
-                    Ok(response) => response.status(),
-                    Err(_) => return ExeStatus::HttpError,
-                };
-            }
-        } else {
-            return ExeStatus::CommandNotFound;
-        };
-
-        ExeStatus::OK
+        return self
+            .commands
+            .get(command)
+            .map_or(ExeStatus::CommandNotFound, |queries| {
+                for query in queries {
+                    println!("      Executing query {}", query);
+                    if client
+                        .get(query)
+                        .send()
+                        .map_or(ExeStatus::HttpError, |_| ExeStatus::OK)
+                        == ExeStatus::HttpError
+                    {
+                        return ExeStatus::HttpError;
+                    }
+                }
+                ExeStatus::OK
+            });
     }
 
     pub fn eval_predicate(&self, predicate: &str) -> bool {

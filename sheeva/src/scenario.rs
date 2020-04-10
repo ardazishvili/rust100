@@ -37,43 +37,43 @@ impl Scenario {
         self.commands = Some(cmds);
     }
 
-    pub async fn execute(&self) {
-        println!("Printing the scenario");
-        if let Some(evaluator) = &self.commands {
+    pub fn execute(&self) {
+        self.commands.as_ref().map(|evaluator| {
             for node in self.tree.cond_iter(evaluator).skip(1) {
                 if node.t == NodeType::Exe {
-                    println!("  Executing command {}", node.name());
-                    let res = evaluator.execute(node.name()).await;
-                    if res != ExeStatus::OK {
-                        println!("      No query for command {}", node.name());
+                    let res = evaluator.execute(node.name());
+                    match res {
+                        ExeStatus::CommandNotFound => println!("      No query {}", node.name()),
+                        ExeStatus::HttpError => println!("      Can't connect to the server"),
+                        ExeStatus::OK => println!("         Command {} executed", node.name()),
                     }
                 }
             }
-        }
+        });
     }
 
     pub fn print(&self) {
+        println!("Printing the scenario");
         for node in self.tree.dfs() {
             match &node.t {
                 NodeType::None => println!("Type of node {} is None", node.name()),
                 NodeType::Exe => println!("Type of node {} is Exe", node.name()),
-                NodeType::Condition(opt) => match opt {
-                    Some(s) => {
-                        if let Some(evaluator) = &self.commands {
-                            println!(
-                                "Type of node {} is Condition with predicate {}, which evaluates to {}",
-                                node.name(),
-                                s,
-                                evaluator.eval_predicate(s)
-                                )
-                        }
-                    }
+                NodeType::Condition(opt) => opt.as_ref().map_or_else(
+                    || {
+                        println!( "Type of node {} is ELSE condition", node.name());
+                    },
 
-                    None => println!(
-                        "Type of node {} is Condition with predicate TRUE",
-                        node.name()
+                    |predicate| {
+                        self.commands.as_ref().map(|evaluator| {
+                            println!(
+                                "Type of node {} is IF Condition with predicate {}, which evaluates to {}",
+                                node.name(),
+                                predicate,
+                                evaluator.eval_predicate(&predicate)
+                                );
+                        });
+                    },
                     ),
-                },
             }
             for (index, value) in node.values().iter().enumerate() {
                 println!("value # {} is {}", index, value);
